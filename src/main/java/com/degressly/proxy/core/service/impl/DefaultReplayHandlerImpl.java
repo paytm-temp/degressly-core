@@ -51,6 +51,9 @@ public class DefaultReplayHandlerImpl implements ReplayHandler {
 	@Value("${degressly.downstream.host:localhost:8080}")
 	private String downstreamHost;
 
+	@Value("${degressly.core.traceid.context.enabled:false}")
+	private boolean traceIdContextEnabled;
+
 	private final ExecutorService outgoingExecutorService = Executors.newVirtualThreadPerTaskExecutor();
 
 	private final ExecutorService incomingExecutorService = Executors.newSingleThreadExecutor();
@@ -93,27 +96,37 @@ public class DefaultReplayHandlerImpl implements ReplayHandler {
 
 		MDC.put(TRACE_ID, degresslyRequest.getTraceId());
 
-		try {
-			// Set global traceId context in downstream
-			String setTraceIdUrl = String.format("http://%s/traceid/context", downstreamHost);
-			httpClient.post(degresslyRequest.getTraceId(), setTraceIdUrl, null, new LinkedMultiValueMap<>(), 
-					new LinkedMultiValueMap<>(), degresslyRequest.getTraceId());
+		if (traceIdContextEnabled) {
+			try {
+				// Set global traceId context in downstream
+				String setTraceIdUrl = String.format("http://%s/traceid/context", downstreamHost);
+				LinkedMultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+				headers.add(DEGRESSLY_CACHE_POPULATION_REQUEST, Boolean.TRUE.toString());
 
-			// Process the request
+				// Set context with cache population header
+				httpClient.post(degresslyRequest.getTraceId(), setTraceIdUrl, null, headers, 
+						new LinkedMultiValueMap<>(), degresslyRequest.getTraceId());
+
+				// Process the request
+				multicastService.getResponse(httpServletRequest, getMultiValueMap(degresslyRequest.getHeaders()),
+						getMultiValueMap(degresslyRequest.getParams()), degresslyRequest.getBody(), true);
+
+				// Wait before unsetting the context
+				if (traceIdCleanupDelay > 0) {
+					Thread.sleep(traceIdCleanupDelay);
+				}
+
+				// Unset global traceId context with cache population header
+				httpClient.delete(degresslyRequest.getTraceId(), setTraceIdUrl, null, headers, 
+						new LinkedMultiValueMap<>(), null);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				throw new RuntimeException("Interrupted while waiting to unset traceId context", e);
+			}
+		} else {
+			// When feature is disabled, just process the request normally
 			multicastService.getResponse(httpServletRequest, getMultiValueMap(degresslyRequest.getHeaders()),
 					getMultiValueMap(degresslyRequest.getParams()), degresslyRequest.getBody(), true);
-
-			// Wait before unsetting the context
-			if (traceIdCleanupDelay > 0) {
-				Thread.sleep(traceIdCleanupDelay);
-			}
-
-			// Unset global traceId context
-			httpClient.delete(degresslyRequest.getTraceId(), setTraceIdUrl, null, new LinkedMultiValueMap<>(), 
-					new LinkedMultiValueMap<>(), null);
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			throw new RuntimeException("Interrupted while waiting to unset traceId context", e);
 		}
 	}
 

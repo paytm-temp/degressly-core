@@ -132,4 +132,14 @@ public class HttpClient {
 		}
 	}
 
+	public ResponseEntity post(String traceId, String url, Object pathVariables,
+			MultiValueMap<String, String> headers, MultiValueMap<String, String> params, String body) {
+		return getResponse(traceId, url, new GeneratedHttpServletRequest("POST", url), headers, params, body);
+	}
+
+	public ResponseEntity delete(String traceId, String url, Object pathVariables,
+			MultiValueMap<String, String> headers, MultiValueMap<String, String> params, String body) {
+		return getResponse(traceId, url, new GeneratedHttpServletRequest("DELETE", url), headers, params, body);
+	}
+
 }

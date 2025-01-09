@@ -15,6 +15,7 @@ public class Observation {
 
 	String requestUrl;
 
+	@Builder.Default
 	String observationType = "RESPONSE";
 
 	DownstreamResult primaryResult;

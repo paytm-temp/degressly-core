@@ -48,9 +48,6 @@ public class DefaultReplayHandlerImpl implements ReplayHandler {
 	@Value("${degressly.core.traceid.cleanup.delay:5000}")
 	private long traceIdCleanupDelay;
 
-	@Value("${degressly.downstream.host:localhost:8080}")
-	private String downstreamHost;
-
 	@Value("${degressly.core.traceid.context.enabled:false}")
 	private boolean traceIdContextEnabled;
 
@@ -104,7 +101,7 @@ public class DefaultReplayHandlerImpl implements ReplayHandler {
 				headers.add(DEGRESSLY_CACHE_POPULATION_REQUEST, Boolean.TRUE.toString());
 
 				// Set context with cache population header
-				httpClient.post(degresslyRequest.getTraceId(), setTraceIdUrl, null, headers, 
+				httpClient.post(degresslyRequest.getTraceId(), setTraceIdUrl, null, headers,
 						new LinkedMultiValueMap<>(), degresslyRequest.getTraceId());
 
 				// Process the request
@@ -117,13 +114,15 @@ public class DefaultReplayHandlerImpl implements ReplayHandler {
 				}
 
 				// Unset global traceId context with cache population header
-				httpClient.delete(degresslyRequest.getTraceId(), setTraceIdUrl, null, headers, 
+				httpClient.delete(degresslyRequest.getTraceId(), setTraceIdUrl, null, headers,
 						new LinkedMultiValueMap<>(), null);
-			} catch (InterruptedException e) {
+			}
+			catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 				throw new RuntimeException("Interrupted while waiting to unset traceId context", e);
 			}
-		} else {
+		}
+		else {
 			// When feature is disabled, just process the request normally
 			multicastService.getResponse(httpServletRequest, getMultiValueMap(degresslyRequest.getHeaders()),
 					getMultiValueMap(degresslyRequest.getParams()), degresslyRequest.getBody(), true);

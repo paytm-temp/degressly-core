@@ -1,378 +1,393 @@
-package com.degressly.proxy.core.dto;
+package com.degressly.proxy.core.http;
 
-import jakarta.servlet.*;
-import jakarta.servlet.http.*;
-
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpUpgradeHandler;
+import jakarta.servlet.http.Part;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.Principal;
-import java.util.*;
+import java.util.Collection;
+import java.util.Enumeration;
+import java.util.Locale;
+import java.util.Map;
 
 public class GeneratedHttpServletRequest implements HttpServletRequest {
 
-	private String method;
+	private final String method;
 
-	private String requestURI;
+	private final String requestURL;
+
+	public GeneratedHttpServletRequest(String method, String requestURL) {
+		this.method = method;
+		this.requestURL = requestURL;
+	}
 
 	@Override
 	public String getMethod() {
-		return this.method;
-	}
-
-	public void setMethod(String method) {
-		this.method = method;
+		return method;
 	}
 
 	@Override
-	public String getRequestURI() {
-		return this.requestURI;
+	public String getRequestURL() {
+		return requestURL;
 	}
 
-	public void setRequestURI(String requestURI) {
-		this.requestURI = requestURI;
-	}
-
+	// Implement only the methods we need, throw UnsupportedOperationException for others
 	@Override
 	public String getAuthType() {
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	@Override
 	public Cookie[] getCookies() {
-		throw new UnsupportedOperationException();
+		return new Cookie[0];
 	}
 
 	@Override
 	public long getDateHeader(String name) {
-		throw new UnsupportedOperationException();
+		return -1;
 	}
 
 	@Override
 	public String getHeader(String name) {
-		throw new UnsupportedOperationException();
+		return null;
 	}
 
 	@Override
 	public Enumeration<String> getHeaders(String name) {
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	@Override
 	public Enumeration<String> getHeaderNames() {
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	@Override
 	public int getIntHeader(String name) {
-		throw new UnsupportedOperationException();
+		return -1;
 	}
 
 	@Override
 	public String getPathInfo() {
-		throw new UnsupportedOperationException();
+		return null;
 	}
 
 	@Override
 	public String getPathTranslated() {
-		throw new UnsupportedOperationException();
+		return null;
 	}
 
 	@Override
 	public String getContextPath() {
-		throw new UnsupportedOperationException();
+		return "";
 	}
 
 	@Override
 	public String getQueryString() {
-		throw new UnsupportedOperationException();
+		return null;
 	}
 
 	@Override
 	public String getRemoteUser() {
-		throw new UnsupportedOperationException();
+		return null;
 	}
 
 	@Override
 	public boolean isUserInRole(String role) {
-		throw new UnsupportedOperationException();
+		return false;
 	}
 
 	@Override
 	public Principal getUserPrincipal() {
-		throw new UnsupportedOperationException();
+		return null;
 	}
 
 	@Override
 	public String getRequestedSessionId() {
-		throw new UnsupportedOperationException();
+		return null;
+	}
+
+	@Override
+	public String getRequestURI() {
+		return requestURL;
 	}
 
 	@Override
 	public StringBuffer getRequestURL() {
-		throw new UnsupportedOperationException();
+		return new StringBuffer(requestURL);
 	}
 
 	@Override
 	public String getServletPath() {
-		throw new UnsupportedOperationException();
+		return "";
 	}
 
 	@Override
 	public HttpSession getSession(boolean create) {
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	@Override
 	public HttpSession getSession() {
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	@Override
 	public String changeSessionId() {
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	@Override
 	public boolean isRequestedSessionIdValid() {
-		throw new UnsupportedOperationException();
+		return false;
 	}
 
 	@Override
 	public boolean isRequestedSessionIdFromCookie() {
-		throw new UnsupportedOperationException();
+		return false;
 	}
 
 	@Override
 	public boolean isRequestedSessionIdFromURL() {
-		throw new UnsupportedOperationException();
+		return false;
 	}
 
 	@Override
-	public boolean authenticate(HttpServletResponse response) throws IOException, ServletException {
-		throw new UnsupportedOperationException();
+	public boolean authenticate(HttpServletResponse response) {
+		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	@Override
-	public void login(String username, String password) throws ServletException {
-		throw new UnsupportedOperationException();
+	public void login(String username, String password) {
+		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	@Override
-	public void logout() throws ServletException {
-		throw new UnsupportedOperationException();
+	public void logout() {
+		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	@Override
-	public Collection<Part> getParts() throws IOException, ServletException {
-		throw new UnsupportedOperationException();
+	public Collection<Part> getParts() {
+		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	@Override
-	public Part getPart(String name) throws IOException, ServletException {
-		throw new UnsupportedOperationException();
+	public Part getPart(String name) {
+		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	@Override
-	public <T extends HttpUpgradeHandler> T upgrade(Class<T> httpUpgradeHandlerClass)
-			throws IOException, ServletException {
-		throw new UnsupportedOperationException();
+	public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) {
+		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	@Override
 	public Object getAttribute(String name) {
-		throw new UnsupportedOperationException();
+		return null;
 	}
 
 	@Override
 	public Enumeration<String> getAttributeNames() {
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	@Override
 	public String getCharacterEncoding() {
-		throw new UnsupportedOperationException();
+		return "UTF-8";
 	}
 
 	@Override
-	public void setCharacterEncoding(String encoding) throws UnsupportedEncodingException {
-
+	public void setCharacterEncoding(String env) throws UnsupportedEncodingException {
+		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	@Override
 	public int getContentLength() {
-		throw new UnsupportedOperationException();
+		return 0;
 	}
 
 	@Override
 	public long getContentLengthLong() {
-		throw new UnsupportedOperationException();
+		return 0;
 	}
 
 	@Override
 	public String getContentType() {
-		throw new UnsupportedOperationException();
+		return null;
 	}
 
 	@Override
 	public ServletInputStream getInputStream() throws IOException {
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	@Override
 	public String getParameter(String name) {
-		throw new UnsupportedOperationException();
+		return null;
 	}
 
 	@Override
 	public Enumeration<String> getParameterNames() {
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	@Override
 	public String[] getParameterValues(String name) {
-		throw new UnsupportedOperationException();
+		return new String[0];
 	}
 
 	@Override
 	public Map<String, String[]> getParameterMap() {
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	@Override
 	public String getProtocol() {
-		throw new UnsupportedOperationException();
+		return "HTTP/1.1";
 	}
 
 	@Override
 	public String getScheme() {
-		throw new UnsupportedOperationException();
+		return "http";
 	}
 
 	@Override
 	public String getServerName() {
-		throw new UnsupportedOperationException();
+		return "localhost";
 	}
 
 	@Override
 	public int getServerPort() {
-		throw new UnsupportedOperationException();
+		return 8080;
 	}
 
 	@Override
 	public BufferedReader getReader() throws IOException {
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	@Override
 	public String getRemoteAddr() {
-		throw new UnsupportedOperationException();
+		return "127.0.0.1";
 	}
 
 	@Override
 	public String getRemoteHost() {
-		throw new UnsupportedOperationException();
+		return "localhost";
 	}
 
 	@Override
 	public void setAttribute(String name, Object o) {
-
+		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	@Override
 	public void removeAttribute(String name) {
-
+		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	@Override
 	public Locale getLocale() {
-		throw new UnsupportedOperationException();
+		return Locale.getDefault();
 	}
 
 	@Override
 	public Enumeration<Locale> getLocales() {
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	@Override
 	public boolean isSecure() {
-		throw new UnsupportedOperationException();
+		return false;
 	}
 
 	@Override
 	public RequestDispatcher getRequestDispatcher(String path) {
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	@Override
 	public int getRemotePort() {
-		throw new UnsupportedOperationException();
+		return 0;
 	}
 
 	@Override
 	public String getLocalName() {
-		throw new UnsupportedOperationException();
+		return "localhost";
 	}
 
 	@Override
 	public String getLocalAddr() {
-		throw new UnsupportedOperationException();
+		return "127.0.0.1";
 	}
 
 	@Override
 	public int getLocalPort() {
-		throw new UnsupportedOperationException();
+		return 8080;
 	}
 
 	@Override
 	public ServletContext getServletContext() {
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	@Override
 	public AsyncContext startAsync() throws IllegalStateException {
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	@Override
 	public AsyncContext startAsync(ServletRequest servletRequest, ServletResponse servletResponse)
 			throws IllegalStateException {
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	@Override
 	public boolean isAsyncStarted() {
-		throw new UnsupportedOperationException();
+		return false;
 	}
 
 	@Override
 	public boolean isAsyncSupported() {
-		throw new UnsupportedOperationException();
+		return false;
 	}
 
 	@Override
 	public AsyncContext getAsyncContext() {
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	@Override
 	public DispatcherType getDispatcherType() {
-		throw new UnsupportedOperationException();
+		return DispatcherType.REQUEST;
 	}
 
 	@Override
 	public String getRequestId() {
-		throw new UnsupportedOperationException();
+		return null;
 	}
 
 	@Override
 	public String getProtocolRequestId() {
-		throw new UnsupportedOperationException();
+		return null;
 	}
 
 	@Override
 	public ServletConnection getServletConnection() {
-		throw new UnsupportedOperationException();
+		return null;
 	}
 
 }

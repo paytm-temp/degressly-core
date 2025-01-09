@@ -162,7 +162,7 @@ public class DefaultReplayHandlerImpl implements ReplayHandler {
 	}
 
 	private static GeneratedHttpServletRequest getGeneratedHttpServletRequest(DegresslyRequest degresslyRequest) {
-		var httpServletRequest = new GeneratedHttpServletRequest();
+		var httpServletRequest = new GeneratedHttpServletRequest("GET", "");
 		try {
 			httpServletRequest = KafkaToHttpServletRequestAdapter.convert(degresslyRequest);
 		}

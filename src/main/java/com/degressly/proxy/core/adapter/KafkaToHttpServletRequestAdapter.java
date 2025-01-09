@@ -14,17 +14,11 @@ public class KafkaToHttpServletRequestAdapter {
 
 	public static GeneratedHttpServletRequest convert(DegresslyRequest degresslyRequest)
 			throws JsonProcessingException {
-		GeneratedHttpServletRequest httpServletRequest = new GeneratedHttpServletRequest();
-
-		if ("OUTGOING".equals(degresslyRequest.getType())) {
-			httpServletRequest.setMethod(HttpMethod.POST.name());
-		}
-		else {
-			httpServletRequest.setMethod(degresslyRequest.getMethod());
-		}
-
-		httpServletRequest.setRequestURI(getRequestURI(degresslyRequest.getUrl()));
-		return httpServletRequest;
+		String method = "OUTGOING".equals(degresslyRequest.getType()) ? 
+			HttpMethod.POST.name() : degresslyRequest.getMethod();
+		String requestUri = getRequestURI(degresslyRequest.getUrl());
+		
+		return new GeneratedHttpServletRequest(method, requestUri);
 
 	}
 

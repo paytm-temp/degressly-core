@@ -1,4 +1,4 @@
-package com.degressly.proxy.core.http;
+package com.degressly.proxy.core.dto;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;

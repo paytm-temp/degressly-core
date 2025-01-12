@@ -6,10 +6,16 @@ mod models;
 use std::sync::Arc;
 use actix_web::{web, App, HttpServer};
 use log::info;
-use crate::proxy::{
-    MulticastService,
-    handler::handle_proxy,
-    service::HttpProxyMulticastService,
+use crate::{
+    proxy::{
+        MulticastService,
+        handler::handle_proxy,
+        service::HttpProxyMulticastService,
+    },
+    kafka::{
+        producer::ProducerTemplate,
+        replay::ReplayReceiver,
+    },
 };
 
 #[actix_web::main]

@@ -28,7 +28,8 @@ impl HttpProxyMulticastService {
         let url = format!("{}{}", base_url, request.url);
         let mut req_builder = self.client
             .request(
-                request.method.parse().map_err(|e: std::string::ParseError| DegresslyError::HttpError(e.to_string()))?,
+                reqwest::Method::from_bytes(request.method.as_bytes())
+                    .map_err(|e| DegresslyError::HttpError(e.to_string()))?,
                 &url,
             );
 

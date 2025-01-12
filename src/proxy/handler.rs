@@ -5,7 +5,7 @@ use actix_web::{
 use std::{collections::HashMap, sync::Arc};
 
 use crate::{
-    models::{DegresslyRequest, Result, HostType, DegresslyError},
+    models::{DegresslyRequest, HostType, DegresslyError},
     proxy::MulticastService,
 };
 
@@ -14,7 +14,7 @@ pub async fn handle_proxy(
     req: HttpRequest,
     body: Bytes,
     query: web::Query<HashMap<String, String>>,
-) -> Result<HttpResponse> {
+) -> actix_web::Result<HttpResponse> {
     let degressly_request = DegresslyRequest {
         trace_id: req
             .headers()
@@ -49,13 +49,16 @@ pub async fn handle_proxy(
         .map(|s| s.eq_ignore_ascii_case("true"))
         .unwrap_or(false);
 
-    let results = multicast_service.get_response(degressly_request, wait_for_all).await?;
+    let results = multicast_service
+        .get_response(degressly_request, wait_for_all)
+        .await
+        .map_err(actix_web::error::ErrorInternalServerError)?;
     
     // For now, return the primary result if available, or the first available result
     let primary_result = results
         .get(&HostType::Primary)
         .or_else(|| results.values().next())
-        .ok_or_else(|| DegresslyError::InternalError("No response available".into()))?;
+        .ok_or_else(|| actix_web::error::ErrorInternalServerError("No response available"))?;
 
     // Build response with headers
     let mut response = HttpResponse::build(

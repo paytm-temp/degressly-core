@@ -37,8 +37,7 @@ pub struct CachePopulationRequest {
 }
 
 // Enum to represent different host types
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[derive(Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum HostType {
     Primary,
     Secondary,

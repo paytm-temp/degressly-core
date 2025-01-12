@@ -60,4 +60,20 @@ pub enum DegresslyError {
     InternalError(String),
 }
 
+impl actix_web::ResponseError for DegresslyError {
+    fn error_response(&self) -> actix_web::HttpResponse {
+        actix_web::HttpResponse::InternalServerError()
+            .json(serde_json::json!({
+                "error": self.to_string()
+            }))
+    }
+
+    fn status_code(&self) -> actix_web::http::StatusCode {
+        match self {
+            DegresslyError::HttpError(_) => actix_web::http::StatusCode::BAD_REQUEST,
+            _ => actix_web::http::StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+}
+
 pub type Result<T> = std::result::Result<T, DegresslyError>;

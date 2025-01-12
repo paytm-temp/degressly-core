@@ -1,6 +1,6 @@
 use rdkafka::config::ClientConfig;
 use rdkafka::producer::FutureProducer;
-use rdkafka::consumer::StreamConsumer;
+use rdkafka::consumer::{StreamConsumer, Consumer};
 
 
 pub struct KafkaConfig {

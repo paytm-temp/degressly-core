@@ -5,7 +5,7 @@ use actix_web::{
 use std::{collections::HashMap, sync::Arc};
 
 use crate::{
-    models::{DegresslyRequest, HostType, DegresslyError},
+    models::{DegresslyRequest, HostType},
     proxy::MulticastService,
 };
 

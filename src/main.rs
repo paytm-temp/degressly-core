@@ -50,7 +50,7 @@ async fn main() -> std::io::Result<()> {
     let replay_receiver = ReplayReceiver::new(replay_consumer.expect("Failed to create Kafka consumer"), Arc::clone(&multicast_service) as Arc<dyn MulticastService>);
 
     // Start replay loop in background task
-    let replay_handle = tokio::spawn(async move {
+    let _replay_handle = tokio::spawn(async move {
         if let Err(e) = replay_receiver.start_replay_loop().await {
             log::error!("Replay loop error: {}", e);
         }

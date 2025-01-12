@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::sync::Arc;
+// Removed unused Arc import
 
 use async_trait::async_trait;
 use reqwest::Client;
@@ -24,9 +24,9 @@ impl HttpProxyMulticastService {
         }
     }
 
-    async fn make_request(&self, base_url: &str, request: DegresslyRequest) -> Result<DownstreamResult> {
-        let url = format!("{}{}", base_url, request.url);
-        let mut req_builder = self.client
+    async fn make_request_static(client: &Client, base_url: &str, request: DegresslyRequest) -> Result<DownstreamResult> {
+        let url = format!("{}{}", &base_url, request.url);
+        let mut req_builder = client
             .request(
                 reqwest::Method::from_bytes(request.method.as_bytes())
                     .map_err(|e| DegresslyError::HttpError(e.to_string()))?,
@@ -86,22 +86,41 @@ impl MulticastService for HttpProxyMulticastService {
     ) -> Result<HashMap<HostType, DownstreamResult>> {
         let mut results = HashMap::new();
         
-        // Clone hosts to avoid borrowing issues
+        // Clone everything needed for async blocks
+        let client = self.client.clone();
         let primary_host = self.primary_host.clone();
         let secondary_host = self.secondary_host.clone();
         let candidate_host = self.candidate_host.clone();
         
-        // Create futures for all requests
-        let request_clone1 = request.clone();
-        let request_clone2 = request.clone();
-        let primary = self.make_request(&primary_host, request);
-        let secondary = self.make_request(&secondary_host, request_clone1);
-        let candidate = self.make_request(&candidate_host, request_clone2);
+        // Create independent futures that own their data
+        let primary_fut = {
+            let req = request.clone();
+            let host = primary_host;
+            async move {
+                HttpProxyMulticastService::make_request_static(&client, &host, req).await
+            }
+        };
+        
+        let secondary_fut = {
+            let req = request.clone();
+            let host = secondary_host;
+            async move {
+                HttpProxyMulticastService::make_request_static(&client, &host, req).await
+            }
+        };
+        
+        let candidate_fut = {
+            let req = request;
+            let host = candidate_host;
+            async move {
+                HttpProxyMulticastService::make_request_static(&client, &host, req).await
+            }
+        };
 
         if wait_for_all_replicas {
             // Wait for all requests to complete
             let (primary_result, secondary_result, candidate_result) = 
-                tokio::try_join!(primary, secondary, candidate)
+                tokio::try_join!(primary_fut, secondary_fut, candidate_fut)
                     .map_err(|e| DegresslyError::HttpError(e.to_string()))?;
 
             results.insert(HostType::Primary, primary_result);
@@ -109,18 +128,18 @@ impl MulticastService for HttpProxyMulticastService {
             results.insert(HostType::Candidate, candidate_result);
         } else {
             // Only wait for primary, fire and forget others
-            if let Ok(result) = primary.await {
+            if let Ok(result) = primary_fut.await {
                 results.insert(HostType::Primary, result);
             }
             
             tokio::spawn(async move {
-                if let Ok(_result) = secondary.await {
+                if let Ok(_result) = secondary_fut.await {
                     // TODO: Implement observation publishing for secondary result
                 }
             });
             
             tokio::spawn(async move {
-                if let Ok(_result) = candidate.await {
+                if let Ok(_result) = candidate_fut.await {
                     // TODO: Implement observation publishing for candidate result
                 }
             });

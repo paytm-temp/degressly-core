@@ -24,7 +24,7 @@ impl HttpProxyMulticastService {
         }
     }
 
-    async fn make_request(&self, base_url: &str, request: &DegresslyRequest) -> Result<DownstreamResult> {
+    async fn make_request(&self, base_url: &str, request: DegresslyRequest) -> Result<DownstreamResult> {
         let url = format!("{}{}", base_url, request.url);
         let mut req_builder = self.client
             .request(
@@ -86,10 +86,17 @@ impl MulticastService for HttpProxyMulticastService {
     ) -> Result<HashMap<HostType, DownstreamResult>> {
         let mut results = HashMap::new();
         
+        // Clone hosts to avoid borrowing issues
+        let primary_host = self.primary_host.clone();
+        let secondary_host = self.secondary_host.clone();
+        let candidate_host = self.candidate_host.clone();
+        
         // Create futures for all requests
-        let primary = self.make_request(&self.primary_host, &request);
-        let secondary = self.make_request(&self.secondary_host, &request);
-        let candidate = self.make_request(&self.candidate_host, &request);
+        let request_clone1 = request.clone();
+        let request_clone2 = request.clone();
+        let primary = self.make_request(&primary_host, request);
+        let secondary = self.make_request(&secondary_host, request_clone1);
+        let candidate = self.make_request(&candidate_host, request_clone2);
 
         if wait_for_all_replicas {
             // Wait for all requests to complete
@@ -107,13 +114,13 @@ impl MulticastService for HttpProxyMulticastService {
             }
             
             tokio::spawn(async move {
-                if let Ok(result) = secondary.await {
+                if let Ok(_result) = secondary.await {
                     // TODO: Implement observation publishing for secondary result
                 }
             });
             
             tokio::spawn(async move {
-                if let Ok(result) = candidate.await {
+                if let Ok(_result) = candidate.await {
                     // TODO: Implement observation publishing for candidate result
                 }
             });

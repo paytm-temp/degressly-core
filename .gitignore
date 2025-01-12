@@ -1,8 +1,15 @@
 HELP.md
+
+### Java ###
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+
+### Rust ###
+/rust/**/target/
+
+### Environment ###
 .env
 
 ### STS ###

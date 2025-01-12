@@ -13,3 +13,6 @@ pub trait MulticastService: Send + Sync {
 
 pub mod handler;
 pub mod service;
+
+#[cfg(test)]
+mod tests;

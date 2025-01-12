@@ -1,6 +1,5 @@
-use rdkafka::consumer::{StreamConsumer, Consumer};
+use rdkafka::consumer::StreamConsumer;
 use rdkafka::message::Message;
-use rdkafka::message::BorrowedMessage;
 use serde::de::DeserializeOwned;
 use crate::models::Result;
 

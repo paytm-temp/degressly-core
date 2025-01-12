@@ -6,14 +6,10 @@ mod models;
 use std::sync::Arc;
 use actix_web::{web, App, HttpServer};
 use log::info;
-use proxy::{
-    handler::ProxyHandler,
+use crate::proxy::{
+    MulticastService,
+    handler::handle_proxy,
     service::HttpProxyMulticastService,
-};
-use kafka::{
-    config::KafkaConfig,
-    producer::ProducerTemplate,
-    replay::ReplayReceiver,
 };
 
 #[actix_web::main]
@@ -64,7 +60,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(multicast_service.clone())
             .app_data(producer_template.clone())
             .service(web::scope("/api").service(
-                web::resource("/proxy").route(web::post().to(ProxyHandler::handle_proxy))
+                web::resource("/proxy").route(web::post().to(handle_proxy))
             ))
     })
     .bind(("0.0.0.0", 8000))?

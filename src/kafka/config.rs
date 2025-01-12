@@ -1,7 +1,7 @@
 use rdkafka::config::ClientConfig;
 use rdkafka::producer::FutureProducer;
 use rdkafka::consumer::{StreamConsumer, Consumer};
-use std::time::Duration;
+
 
 pub struct KafkaConfig {
     bootstrap_servers: String,

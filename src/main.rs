@@ -22,10 +22,14 @@ async fn main() -> std::io::Result<()> {
     info!("Starting degressly-core server...");
 
     // TODO: Move to configuration
+    // Load configuration
+    let settings = config::Settings::new()
+        .expect("Failed to load configuration");
+
     // Initialize Kafka configuration
-    let kafka_config = KafkaConfig::new(
-        "localhost:9092".to_string(),
-        "degressly-group".to_string(),
+    let kafka_config = kafka::config::KafkaConfig::new(
+        settings.kafka.bootstrap_servers,
+        settings.kafka.group_id,
     );
 
     // Create Kafka producer and consumer
@@ -34,13 +38,13 @@ async fn main() -> std::io::Result<()> {
 
     // Create multicast service
     let multicast_service = Arc::new(HttpProxyMulticastService::new(
-        "http://localhost:9000".to_string(),
-        "http://localhost:9001".to_string(),
-        "http://localhost:9002".to_string(),
+        settings.hosts.primary,
+        settings.hosts.secondary,
+        settings.hosts.candidate,
     ));
 
     // Initialize replay receiver with consumer
-    let replay_consumer = kafka_config.create_consumer(&["degressly.replay"]);
+    let replay_consumer = kafka_config.create_consumer(&[&settings.kafka.replay_topic]);
     let replay_receiver = ReplayReceiver::new(replay_consumer, Arc::clone(&multicast_service));
 
     // Start replay loop in background task

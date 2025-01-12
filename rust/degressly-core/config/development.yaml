@@ -1,0 +1,14 @@
+server:
+  port: 8000
+  debug: true
+
+hosts:
+  primary: "http://localhost:9000"
+  secondary: "http://localhost:9001"
+  candidate: "http://localhost:9002"
+
+kafka:
+  bootstrap_servers: "localhost:9092"
+  group_id: "degressly-group-dev"
+  replay_topic: "degressly.replay.dev"
+  observation_topic: "degressly.observation.dev"

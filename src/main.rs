@@ -54,12 +54,15 @@ async fn main() -> std::io::Result<()> {
         }
     });
 
-    let proxy_handler = web::Data::new(ProxyHandler::new(multicast_service));
+    // Create shared services
+    let multicast_service = web::Data::new(multicast_service);
+    let producer_template = web::Data::new(producer_template);
 
     HttpServer::new(move || {
         App::new()
             .wrap(actix_web::middleware::Logger::default())
-            .app_data(proxy_handler.clone())
+            .app_data(multicast_service.clone())
+            .app_data(producer_template.clone())
             .service(web::scope("/api").service(
                 web::resource("/proxy").route(web::post().to(ProxyHandler::handle_proxy))
             ))

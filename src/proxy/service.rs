@@ -97,6 +97,7 @@ impl MulticastService for HttpProxyMulticastService {
             let host = primary_host;
             let client = self.client.clone();
             async move {
+                let client = client;  // Take ownership explicitly
                 HttpProxyMulticastService::make_request_static(&client, &host, req).await
             }
         };
@@ -106,6 +107,7 @@ impl MulticastService for HttpProxyMulticastService {
             let host = secondary_host;
             let client = self.client.clone();
             async move {
+                let client = client;  // Take ownership explicitly
                 HttpProxyMulticastService::make_request_static(&client, &host, req).await
             }
         };
@@ -115,6 +117,7 @@ impl MulticastService for HttpProxyMulticastService {
             let host = candidate_host;
             let client = self.client.clone();
             async move {
+                let client = client;  // Take ownership explicitly
                 HttpProxyMulticastService::make_request_static(&client, &host, req).await
             }
         };

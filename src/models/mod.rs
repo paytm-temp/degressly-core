@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use actix_web::{HttpResponse, ResponseError, http::StatusCode};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DegresslyRequest {

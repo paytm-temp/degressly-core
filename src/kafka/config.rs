@@ -1,6 +1,9 @@
-use rdkafka::config::ClientConfig;
-use rdkafka::producer::FutureProducer;
-use rdkafka::consumer::{StreamConsumer, Consumer};
+use rdkafka::{
+    config::ClientConfig,
+    producer::FutureProducer,
+    consumer::{StreamConsumer, Consumer},
+    error::KafkaResult,
+};
 
 
 pub struct KafkaConfig {
@@ -24,20 +27,16 @@ impl KafkaConfig {
             .expect("Producer creation failed")
     }
 
-    pub fn create_consumer(&self, topics: &[&str]) -> StreamConsumer {
+    pub fn create_consumer(&self, topics: &[&str]) -> KafkaResult<StreamConsumer> {
         let consumer: StreamConsumer = ClientConfig::new()
             .set("bootstrap.servers", &self.bootstrap_servers)
             .set("group.id", &self.group_id)
             .set("enable.auto.commit", "true")
             .set("auto.offset.reset", "earliest")
             .set("session.timeout.ms", "6000")
-            .create()
-            .expect("Consumer creation failed");
+            .create()?;
 
-        consumer
-            .subscribe(topics)
-            .expect("Topic subscription failed");
-
-        consumer
+        consumer.subscribe(topics)?;
+        Ok(consumer)
     }
 }

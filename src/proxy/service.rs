@@ -87,7 +87,6 @@ impl MulticastService for HttpProxyMulticastService {
         let mut results = HashMap::new();
         
         // Clone everything needed for async blocks
-        let client = self.client.clone();
         let primary_host = self.primary_host.clone();
         let secondary_host = self.secondary_host.clone();
         let candidate_host = self.candidate_host.clone();
@@ -96,6 +95,7 @@ impl MulticastService for HttpProxyMulticastService {
         let primary_fut = {
             let req = request.clone();
             let host = primary_host;
+            let client = self.client.clone();
             async move {
                 HttpProxyMulticastService::make_request_static(&client, &host, req).await
             }
@@ -104,6 +104,7 @@ impl MulticastService for HttpProxyMulticastService {
         let secondary_fut = {
             let req = request.clone();
             let host = secondary_host;
+            let client = self.client.clone();
             async move {
                 HttpProxyMulticastService::make_request_static(&client, &host, req).await
             }
@@ -112,6 +113,7 @@ impl MulticastService for HttpProxyMulticastService {
         let candidate_fut = {
             let req = request;
             let host = candidate_host;
+            let client = self.client.clone();
             async move {
                 HttpProxyMulticastService::make_request_static(&client, &host, req).await
             }

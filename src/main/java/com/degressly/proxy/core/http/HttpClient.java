@@ -29,107 +29,132 @@ import static com.degressly.proxy.core.Constants.HEADERS_TO_SKIP;
 @RequiredArgsConstructor
 public class HttpClient {
 
-	@Value("${primary.host}")
-	private String PRIMARY_HOST;
+        @Value("${primary.host}")
+        private String PRIMARY_HOST;
 
-	@Value("${secondary.host}")
-	private String SECONDARY_HOST;
+        @Value("${secondary.host}")
+        private String SECONDARY_HOST;
 
-	@Value("${candidate.host}")
-	private String CANDIDATE_HOST;
+        @Value("${candidate.host}")
+        private String CANDIDATE_HOST;
 
-	private final RestTemplate restTemplate = new RestTemplate();
+        private final RestTemplate restTemplate = new RestTemplate();
 
-	/**
-	 * Specifies the amount of time in milliseconds to wait before sending the request to
-	 * secondary and candidate instances, after the request has been sent to the primary
-	 * instance. May contain negative values, in which case the request will be sent to
-	 * secondary/candidate before being sent to primary; this might be required when live
-	 * cherry-picks from primary are being performed at runtime and the flow requires
-	 * absence of a row for validation.
-	 * <p>
-	 * Please note that this does not account for any external factors such as network
-	 * latency, it is purely the time to put the thread to sleep before initiating the
-	 * call.
-	 */
-	@Value("${wait.after.forwarding.to.primary:0}")
-	private long WAIT_AFTER_FORWARDING_TO_PRIMARY;
+        /**
+         * Specifies the amount of time in milliseconds to wait before sending the request to
+         * secondary and candidate instances, after the request has been sent to the primary
+         * instance. May contain negative values, in which case the request will be sent to
+         * secondary/candidate before being sent to primary; this might be required when live
+         * cherry-picks from primary are being performed at runtime and the flow requires
+         * absence of a row for validation.
+         * <p>
+         * Please note that this does not account for any external factors such as network
+         * latency, it is purely the time to put the thread to sleep before initiating the
+         * call.
+         */
+        @Value("${wait.after.forwarding.to.primary:0}")
+        private long WAIT_AFTER_FORWARDING_TO_PRIMARY;
 
-	public ResponseEntity getResponse(String traceId, String host, HttpServletRequest httpServletRequest,
-			MultiValueMap<String, String> requestHeaders, MultiValueMap<String, String> params, String body) {
+        public ResponseEntity getResponse(String traceId, String host, HttpServletRequest httpServletRequest,
+                        MultiValueMap<String, String> requestHeaders, MultiValueMap<String, String> params, String body) {
 
-		waitIfApplicable(host);
+                waitIfApplicable(host);
 
-		MultiValueMap<String, String> headers = skipRestrictedHeaders(requestHeaders);
+                MultiValueMap<String, String> headers = skipRestrictedHeaders(requestHeaders);
 
-		headers.put("x-degressly-trace-id", Collections.singletonList(traceId));
-		var httpEntity = new HttpEntity<>(body, headers);
-		var queryParams = new HashMap<String, String>();
+                headers.put("x-degressly-trace-id", Collections.singletonList(traceId));
+                var httpEntity = new HttpEntity<>(body, headers);
+                var queryParams = new HashMap<String, String>();
 
-		var finalUrl = getFinalUrl(host, httpServletRequest, params, queryParams);
+                var finalUrl = getFinalUrl(host, httpServletRequest, params, queryParams);
 
-		HttpEntity<String> response;
+                HttpEntity<String> response;
 
-		try {
-			response = restTemplate.exchange(finalUrl, HttpMethod.valueOf(httpServletRequest.getMethod()), httpEntity,
-					String.class, queryParams);
+                try {
+                        response = restTemplate.exchange(finalUrl, HttpMethod.valueOf(httpServletRequest.getMethod()), httpEntity,
+                                        String.class, queryParams);
 
-			log.info("Response for for url {}: Status: {}, Headers: {}, Body: {}", finalUrl, "200",
-					response.getHeaders(), response.getBody());
+                        log.info("Response for for url {}: Status: {}, Headers: {}, Body: {}", finalUrl, "200",
+                                        response.getHeaders(), response.getBody());
 
-		}
-		catch (RestClientResponseException e) {
-			log.info("Response for for url {}: Status: {} Headers: {}, Body: {}", finalUrl, e.getStatusCode(),
-					e.getResponseHeaders(), e.getResponseBodyAsString());
-			return new ResponseEntity(e.getResponseBodyAsString(), skipRestrictedHeaders(e.getResponseHeaders()),
-					HttpStatus.valueOf(e.getStatusCode().value()));
-		}
-		catch (Exception e) {
-			log.info("Exception when calling downstream {}", e.getClass().getCanonicalName(), e);
-			throw e;
-		}
+                }
+                catch (RestClientResponseException e) {
+                        log.info("Response for for url {}: Status: {} Headers: {}, Body: {}", finalUrl, e.getStatusCode(),
+                                        e.getResponseHeaders(), e.getResponseBodyAsString());
+                        return new ResponseEntity(e.getResponseBodyAsString(), skipRestrictedHeaders(e.getResponseHeaders()),
+                                        HttpStatus.valueOf(e.getStatusCode().value()));
+                }
+                catch (Exception e) {
+                        log.info("Exception when calling downstream {}", e.getClass().getCanonicalName(), e);
+                        throw e;
+                }
 
-		return new ResponseEntity(response.getBody(), skipRestrictedHeaders(response.getHeaders()), HttpStatus.OK);
+                return new ResponseEntity(response.getBody(), skipRestrictedHeaders(response.getHeaders()), HttpStatus.OK);
 
-	}
+        }
 
-	private static MultiValueMap<String, String> skipRestrictedHeaders(MultiValueMap<String, String> requestHeaders) {
+        private static MultiValueMap<String, String> skipRestrictedHeaders(MultiValueMap<String, String> requestHeaders) {
 
-		if (CollectionUtils.isEmpty(requestHeaders)) {
-			return new LinkedMultiValueMap<>();
-		}
+                if (CollectionUtils.isEmpty(requestHeaders)) {
+                        return new LinkedMultiValueMap<>();
+                }
 
-		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
-		requestHeaders.forEach((requestHeader, value) -> {
-			if (!HEADERS_TO_SKIP.contains(requestHeader)) {
-				headers.put(requestHeader, value);
-			}
-		});
-		return headers;
-	}
+                MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+                requestHeaders.forEach((requestHeader, value) -> {
+                        if (!HEADERS_TO_SKIP.contains(requestHeader)) {
+                                headers.put(requestHeader, value);
+                        }
+                });
+                return headers;
+        }
 
-	private static String getFinalUrl(String host, HttpServletRequest httpServletRequest,
-			MultiValueMap<String, String> params, Map<String, String> queryParams) {
-		UriComponentsBuilder urlTemplate = UriComponentsBuilder.fromHttpUrl(host + httpServletRequest.getRequestURI());
+        private static String getFinalUrl(String host, HttpServletRequest httpServletRequest,
+                        MultiValueMap<String, String> params, Map<String, String> queryParams) {
+                UriComponentsBuilder urlTemplate = UriComponentsBuilder.fromHttpUrl(host + httpServletRequest.getRequestURI());
 
-		for (Map.Entry<String, List<String>> entry : params.entrySet()) {
-			urlTemplate.queryParam(entry.getKey(), new StringBuilder("{" + entry.getKey() + "}"));
-			queryParams.put(entry.getKey(), entry.getValue().getFirst());
-		}
+                for (Map.Entry<String, List<String>> entry : params.entrySet()) {
+                        urlTemplate.queryParam(entry.getKey(), new StringBuilder("{" + entry.getKey() + "}"));
+                        queryParams.put(entry.getKey(), entry.getValue().getFirst());
+                }
 
-		return urlTemplate.build().toUriString();
-	}
+                return urlTemplate.build().toUriString();
+        }
 
-	@SneakyThrows
-	private void waitIfApplicable(String host) {
-		if (PRIMARY_HOST.equals(host) && WAIT_AFTER_FORWARDING_TO_PRIMARY < 0) {
-			Thread.sleep(Math.abs(WAIT_AFTER_FORWARDING_TO_PRIMARY));
-			return;
-		}
+        @SneakyThrows
+        private void waitIfApplicable(String host) {
+                if (PRIMARY_HOST.equals(host) && WAIT_AFTER_FORWARDING_TO_PRIMARY < 0) {
+                        Thread.sleep(Math.abs(WAIT_AFTER_FORWARDING_TO_PRIMARY));
+                        return;
+                }
 
-		if (WAIT_AFTER_FORWARDING_TO_PRIMARY > 0 && (SECONDARY_HOST.equals(host) || CANDIDATE_HOST.equals(host))) {
-			Thread.sleep(WAIT_AFTER_FORWARDING_TO_PRIMARY);
-		}
-	}
+                if (WAIT_AFTER_FORWARDING_TO_PRIMARY > 0 && (SECONDARY_HOST.equals(host) || CANDIDATE_HOST.equals(host))) {
+                        Thread.sleep(WAIT_AFTER_FORWARDING_TO_PRIMARY);
+                }
+        }
 
+public void notifyDownstreamStart(String traceId) {
+    String url = "http://degressly-downstream/start";
+    MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+    headers.add("x-degressly-current-trace-id", traceId);
+    HttpEntity<String> requestEntity = new HttpEntity<>(null, headers);
+    try {
+        restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
+        log.info("Notified degressly-downstream of start for trace ID: {}", traceId);
+    } catch (Exception e) {
+        log.error("Failed to notify degressly-downstream of start for trace ID: {}", traceId, e);
+    }
+}
+
+public void notifyDownstreamEnd(String traceId) {
+    String url = "http://degressly-downstream/end";
+    MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+    headers.add("x-degressly-current-trace-id", traceId);
+    HttpEntity<String> requestEntity = new HttpEntity<>(null, headers);
+    try {
+        restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
+        log.info("Notified degressly-downstream of end for trace ID: {}", traceId);
+    } catch (Exception e) {
+        log.error("Failed to notify degressly-downstream of end for trace ID: {}", traceId, e);
+    }
+}
 }

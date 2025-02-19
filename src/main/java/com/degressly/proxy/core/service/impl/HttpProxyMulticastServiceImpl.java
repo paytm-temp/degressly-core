@@ -29,116 +29,123 @@ import static com.degressly.proxy.core.Constants.TRACE_ID;
 @RequiredArgsConstructor
 public class HttpProxyMulticastServiceImpl implements MulticastService {
 
-	@Value("${return.response.from:PRIMARY}")
-	private String RETURN_RESPONSE_FROM;
+        @Value("${return.response.from:PRIMARY}")
+        private String RETURN_RESPONSE_FROM;
 
-	@Value("${primary.host}")
-	private String PRIMARY_HOST;
+        @Value("${primary.host}")
+        private String PRIMARY_HOST;
 
-	@Value("${secondary.host}")
-	private String SECONDARY_HOST;
+        @Value("${secondary.host}")
+        private String SECONDARY_HOST;
 
-	@Value("${candidate.host}")
-	private String CANDIDATE_HOST;
+        @Value("${candidate.host}")
+        private String CANDIDATE_HOST;
 
-	private final List<ObservationPublisherService> publishers;
+        private final List<ObservationPublisherService> publishers;
 
-	private final HttpClient httpClient;
+        private final HttpClient httpClient;
 
-	private final ExecutorService primaryExecutorService = Executors.newVirtualThreadPerTaskExecutor();
+        private final ExecutorService primaryExecutorService = Executors.newVirtualThreadPerTaskExecutor();
 
-	private final ExecutorService secondaryExecutorService = Executors.newVirtualThreadPerTaskExecutor();
+        private final ExecutorService secondaryExecutorService = Executors.newVirtualThreadPerTaskExecutor();
 
-	private final ExecutorService candidateExecutorService = Executors.newVirtualThreadPerTaskExecutor();
+        private final ExecutorService candidateExecutorService = Executors.newVirtualThreadPerTaskExecutor();
 
-	private final ExecutorService publisherExecutorService = Executors.newVirtualThreadPerTaskExecutor();
+        private final ExecutorService publisherExecutorService = Executors.newVirtualThreadPerTaskExecutor();
 
-	@Override
-	public ResponseEntity getResponse(HttpServletRequest httpServletRequest, MultiValueMap<String, String> headers,
-			MultiValueMap<String, String> params, String body, boolean waitForAllReplicas) {
+        @Override
+        public ResponseEntity getResponse(HttpServletRequest httpServletRequest, MultiValueMap<String, String> headers,
+                        MultiValueMap<String, String> params, String body, boolean waitForAllReplicas) {
 
-		String traceId = MDC.get(TRACE_ID);
+                String traceId = MDC.get(TRACE_ID);
 
-		Future<ResponseEntity> secondaryResponseFuture = secondaryExecutorService
-			.submit(() -> httpClient.getResponse(traceId, SECONDARY_HOST, httpServletRequest, headers, params, body));
+        // Notify degressly-downstream that processing is starting
+        httpClient.notifyDownstreamStart(traceId);
 
-		Future<ResponseEntity> candidateResponseFuture = candidateExecutorService
-			.submit(() -> httpClient.getResponse(traceId, CANDIDATE_HOST, httpServletRequest, headers, params, body));
 
-		Future<ResponseEntity> primaryResponseFuture = primaryExecutorService
-			.submit(() -> httpClient.getResponse(traceId, PRIMARY_HOST, httpServletRequest, headers, params, body));
+                Future<ResponseEntity> secondaryResponseFuture = secondaryExecutorService
+                        .submit(() -> httpClient.getResponse(traceId, SECONDARY_HOST, httpServletRequest, headers, params, body));
 
-		publisherExecutorService.submit(() -> publishResponses(traceId, httpServletRequest.getRequestURI(),
-				primaryResponseFuture, secondaryResponseFuture, candidateResponseFuture));
+                Future<ResponseEntity> candidateResponseFuture = candidateExecutorService
+                        .submit(() -> httpClient.getResponse(traceId, CANDIDATE_HOST, httpServletRequest, headers, params, body));
 
-		if (waitForAllReplicas) {
-			// In case of replays, it is a good practice to wait for all replicas to
-			// return to make sure API call sequence is maintained. This is not done in
-			// non-replay flows because it can have a detrimental impact on user
-			// experience.
-			waitForFutures(primaryResponseFuture, secondaryResponseFuture, candidateResponseFuture);
-		}
+                Future<ResponseEntity> primaryResponseFuture = primaryExecutorService
+                        .submit(() -> httpClient.getResponse(traceId, PRIMARY_HOST, httpServletRequest, headers, params, body));
 
-		try {
-			return switch (RETURN_RESPONSE_FROM) {
-				case "SECONDARY" -> secondaryResponseFuture.get();
-				case "CANDIDATE" -> candidateResponseFuture.get();
-				default -> primaryResponseFuture.get();
-			};
+                publisherExecutorService.submit(() -> publishResponses(traceId, httpServletRequest.getRequestURI(),
+                                primaryResponseFuture, secondaryResponseFuture, candidateResponseFuture));
 
-		}
-		catch (InterruptedException | ExecutionException e) {
-			log.error("Error while requesting downstream", e);
-			return ResponseEntity.internalServerError().build();
-		}
-	}
+                if (waitForAllReplicas) {
+                        // In case of replays, it is a good practice to wait for all replicas to
+                        // return to make sure API call sequence is maintained. This is not done in
+                        // non-replay flows because it can have a detrimental impact on user
+                        // experience.
+                        waitForFutures(primaryResponseFuture, secondaryResponseFuture, candidateResponseFuture);
+                }
 
-	private void waitForFutures(Future<?>... futures) {
-		for (var future : futures) {
-			try {
-				future.wait();
-			}
-			catch (Exception e) {
-				// Do nothing
-			}
-		}
-	}
+                try {
+                        return switch (RETURN_RESPONSE_FROM) {
+                                case "SECONDARY" -> secondaryResponseFuture.get();
+                                case "CANDIDATE" -> candidateResponseFuture.get();
+                                default -> primaryResponseFuture.get();
+                        };
 
-	private void publishResponses(String traceId, String requestUrl, Future<ResponseEntity> primaryResponseFuture,
-			Future<ResponseEntity> secondaryResponseFuture, Future<ResponseEntity> candidateResponseFuture) {
+                }
+                catch (InterruptedException | ExecutionException e) {
+                        log.error("Error while requesting downstream", e);
+                        return ResponseEntity.internalServerError().build();
+        } finally {
+            // Notify degressly-downstream that processing has ended
+            httpClient.notifyDownstreamEnd(traceId);
+                }
+        }
 
-		List<Future<ResponseEntity>> responseFutures = new ArrayList<>(
-				Arrays.asList(primaryResponseFuture, secondaryResponseFuture, candidateResponseFuture));
+        private void waitForFutures(Future<?>... futures) {
+                for (var future : futures) {
+                        try {
+                                future.wait();
+                        }
+                        catch (Exception e) {
+                                // Do nothing
+                        }
+                }
+        }
 
-		List<DownstreamResult> downstreamResults = new ArrayList<>();
+        private void publishResponses(String traceId, String requestUrl, Future<ResponseEntity> primaryResponseFuture,
+                        Future<ResponseEntity> secondaryResponseFuture, Future<ResponseEntity> candidateResponseFuture) {
 
-		for (Future<ResponseEntity> responseFuture : responseFutures) {
-			var downstreamResult = new DownstreamResult();
-			downstreamResults.add(downstreamResult);
+                List<Future<ResponseEntity>> responseFutures = new ArrayList<>(
+                                Arrays.asList(primaryResponseFuture, secondaryResponseFuture, candidateResponseFuture));
 
-			try {
-				ResponseEntity response = responseFuture.get();
-				downstreamResult.setStatusCode(response.getStatusCode().toString());
-				downstreamResult.setHeaders(response.getHeaders());
-				downstreamResult.setBody((String) response.getBody());
-			}
-			catch (Exception e) {
-				downstreamResult.setException(e.getMessage());
-			}
-		}
+                List<DownstreamResult> downstreamResults = new ArrayList<>();
 
-		Observation observation = Observation.builder()
-			.traceId(traceId)
-			.requestUrl(requestUrl)
-			.observationType("RESPONSE")
-			.primaryResult(downstreamResults.get(0))
-			.secondaryResult(downstreamResults.get(1))
-			.candidateResult(downstreamResults.get(2))
-			.build();
+                for (Future<ResponseEntity> responseFuture : responseFutures) {
+                        var downstreamResult = new DownstreamResult();
+                        downstreamResults.add(downstreamResult);
 
-		for (ObservationPublisherService publisher : publishers) {
-			publisher.publish(observation);
-		}
-	}
+                        try {
+                                ResponseEntity response = responseFuture.get();
+                                downstreamResult.setStatusCode(response.getStatusCode().toString());
+                                downstreamResult.setHeaders(response.getHeaders());
+                                downstreamResult.setBody((String) response.getBody());
+                        }
+                        catch (Exception e) {
+                                downstreamResult.setException(e.getMessage());
+                        }
+                }
+
+                Observation observation = Observation.builder()
+                        .traceId(traceId)
+                        .requestUrl(requestUrl)
+                        .observationType("RESPONSE")
+                        .primaryResult(downstreamResults.get(0))
+                        .secondaryResult(downstreamResults.get(1))
+                        .candidateResult(downstreamResults.get(2))
+                        .build();
+
+                for (ObservationPublisherService publisher : publishers) {
+                        publisher.publish(observation);
+                }
+        }
 
 }
